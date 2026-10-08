@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#101214">
+<title>Dead Rails Quest Tracker</title>
+<style>
+:root{--bg:#0b0d0f;--panel:#121619;--panel2:#181d21;--line:#293137;--text:#f3f5f6;--muted:#9aa5ad;--accent:#d9a441;--good:#6bd58a;--danger:#e56b6f;--shadow:0 16px 50px #0008}
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(circle at 50% -10%,#242b30 0,#0b0d0f 42%);color:var(--text);font:15px/1.5 system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
+button,input,select{font:inherit}button{cursor:pointer}.wrap{max-width:1050px;margin:auto;padding:28px 16px 70px}
+header{display:flex;justify-content:space-between;gap:20px;align-items:end;margin-bottom:22px}.eyebrow{text-transform:uppercase;letter-spacing:.16em;color:var(--accent);font-size:12px;font-weight:800}
+h1{font-size:clamp(30px,6vw,52px);line-height:1;margin:7px 0}.sub{color:var(--muted);max-width:680px}
+.progress{min-width:180px;background:var(--panel);border:1px solid var(--line);padding:14px 16px;border-radius:14px;box-shadow:var(--shadow)}.progress strong{font-size:24px}.bar{height:7px;background:#252c31;border-radius:20px;overflow:hidden;margin-top:8px}.bar i{display:block;height:100%;background:var(--accent);width:0}
+.controls{display:flex;gap:9px;flex-wrap:wrap;margin:18px 0}.controls input,.controls select,.controls button{background:var(--panel);border:1px solid var(--line);color:var(--text);border-radius:10px;padding:10px 12px}.controls input{flex:1;min-width:210px}.controls button.primary{background:var(--accent);border-color:var(--accent);color:#17120a;font-weight:800}
+.notice{background:#161b1f;border:1px solid #343d43;border-radius:12px;padding:11px 13px;color:#c8d0d5;margin-bottom:18px}.notice b{color:#fff}
+section{margin:28px 0}.section-head{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:10px}.section-head h2{font-size:20px;margin:0}.count{color:var(--muted);font-size:13px}
+.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.quest{display:grid;grid-template-columns:auto 38px 1fr auto;align-items:center;gap:11px;background:linear-gradient(145deg,var(--panel2),#111518);border:1px solid var(--line);border-radius:13px;padding:11px 12px;transition:.15s}.quest.done{border-color:#36533f;background:#111a15}.quest.done .name{text-decoration:line-through;color:#8fa096}.quest input[type=checkbox]{width:20px;height:20px;accent-color:var(--good)}.icon{width:38px;height:38px;display:grid;place-items:center;border-radius:10px;background:#0d1012;border:1px solid var(--line);font-size:21px;overflow:hidden}.icon img{width:100%;height:100%;object-fit:cover}.name{font-weight:750}.desc{color:var(--muted);font-size:12px;margin-top:2px}.reward{white-space:nowrap;color:var(--accent);font-weight:800;font-size:12px}.actions{display:flex;gap:6px}.mini{border:1px solid var(--line);background:#0d1012;color:#b9c2c8;border-radius:8px;padding:6px 8px}.mini:hover{border-color:#59656d}.empty{padding:28px;text-align:center;color:var(--muted);border:1px dashed var(--line);border-radius:12px}
+.custom-add{display:grid;grid-template-columns:42px 1fr 1fr auto;gap:8px;margin:12px 0}.custom-add input{background:var(--panel);border:1px solid var(--line);color:#fff;border-radius:9px;padding:10px}.emoji-input{text-align:center}.custom-list{display:grid;gap:8px}
+footer{margin-top:36px;color:#6f7a82;font-size:12px;text-align:center}.hidden{display:none!important}
+@media(max-width:700px){header{align-items:stretch;flex-direction:column}.progress{min-width:0}.grid{grid-template-columns:1fr}.quest{grid-template-columns:auto 34px 1fr}.reward{grid-column:3}.actions{grid-column:3}.custom-add{grid-template-columns:42px 1fr}.custom-add button{grid-column:2}.custom-add input:nth-child(3){grid-column:2}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header><div><div class="eyebrow">Roblox • Dead Rails</div><h1>Quest Tracker</h1><div class="sub">Track challenges, Easter Eggs, and your own goals. Your progress stays on this device.</div></div><div class="progress"><strong id="pct">0%</strong><div id="stat">0 / 0 completed</div><div class="bar"><i id="bar"></i></div></div></header>
+<div class="notice"><b>Current-data note:</b> challenge names/rewards can change with updates. Retired event challenges are kept in a separate section instead of being mixed into the obtainable list.</div>
+<div class="controls"><input id="search" placeholder="Search quests…"><select id="filter"><option value="all">All</option><option value="todo">Not completed</option><option value="done">Completed</option></select><select id="category"><option value="all">All categories</option><option>Milestone</option><option>Hard</option><option>Medium</option><option>Easy</option><option>Easter Egg</option><option>Limited / retired</option></select><button id="uncheck" class="mini">Uncheck all</button><button id="reset" class="mini">Reset everything</button></div>
+<div id="app"></div>
+<section><div class="section-head"><h2>Custom checklist</h2><span class="count">Saved locally</span></div>
+<div class="custom-add"><input id="customIcon" class="emoji-input" value="✓" maxlength="2" title="Emoji icon"><input id="customName" placeholder="Task name"><input id="customNote" placeholder="Optional note"><button id="addCustom" class="primary">Add task</button></div>
+<div id="customList" class="custom-list"></div></section>
+<footer>Made for your Dead Rails grind. No account required. Image icons are stored locally in your browser.</footer>
+</div>
+<script>
+const quests=[
+["escape","Escape","Travel 80km and successfully lower the bridge.","Milestone","5","🚂"],
+["resourceful","Resourceful","Craft an item using every basic material.","Milestone","5","🛠️"],
+["prepared","Prepared Survivor","Place 5 crafted items into your Loadout Crate.","Milestone","5","📦"],
+["long-road","A Long Road Ahead","Kill your first zombie.","Milestone","5","🧟"],
+["bounty","Bounty Hunter","Kill 5 Outlaws and turn in their bounties at a Sheriff’s Office.","Easy","5","🎯"],
+["danger-close","Dangerously Close","Kill a zombie while under 15 health.","Easy","5","❤️‍🩹"],
+["unicorn","Tame a Unicorn","Put a Saddle on a wild Unicorn or find one already tamed.","Medium","5","🦄"],
+["dosage","Recommended Dosage","Drink 10 Snake Oils in 10 seconds.","Easy","15","🧴"],
+["unkillable","Unkillable","Complete the game without dying once.","Medium","15","❤️"],
+["craftsman","Master Craftsman","Craft 20 items.","Medium","5","🔨"],
+["traveler","Experienced Traveler","Travel 160km in Endless Mode.","Medium","15","🛤️"],
+["endless-warrior","Endless Warrior","Travel 240km in Endless Mode.","Medium","15","♾️"],
+["spear","Acquire a Spear of Longinus","Acquire a Spear of Longinus.","Medium","15","🗡️"],
+["holy-grenade","Holy Hand Grenade","Throw a Holy Hand Grenade.","Medium","15","💣"],
+["new-sheriff","New Sheriff in Town","Kill 50 Outlaws in one game.","Medium","15","⭐"],
+["zombie-hunter","Zombie Hunter","Kill 200 Zombies in one game.","Easy","15","🧟"],
+["gunslinger","Gunslinger","Have 20 guns in your inventory at once.","Medium","15","🔫"],
+["werewolf-hunter","Werewolf Hunter","Kill 50 Werewolves in one game.","Hard","15","🐺"],
+["tycoon","Tycoon","Have over $1,000 in one game.","Easy","15","💵"],
+["dances","Dances with Wolves","Tame 20 wolves in one game.","Medium","15","🐺"],
+["pacifist","Pacifist","Complete the game without any player killing an enemy.","Hard","30","☮️"],
+["pony","Pony Express","Complete the game without using the train.","Hard","30","🐎"],
+["fistful","A Fistful of Dollars","Complete the game without selling anything.","Hard","30","💰"],
+["unkillable-team","Perfect Team","Complete the game with no player deaths (requires 2+ players).","Hard","30","🤝"],
+["ruthless","Ruthless","Defeat the third Outlaw Fort in Endless Mode.","Hard","30","⚔️"],
+["scorched","Scorched Earth","Complete Scorched Earth mode.","Hard","30","🔥"],
+["electric","Electric Remains","Sell the corpse of the final Tesla boss.","Very Hard","30","⚡"],
+["ufo","UFO Easter Egg","Complete the super-secret UFO Easter Egg.","Easter Egg","50","🛸"],
+["unicorn-island","Unicorn Island Easter Egg","Complete the Unicorn Island Easter Egg.","Easter Egg","50","🦄"],
+["fools-gold","Fool’s Gold","2025 April Fools challenge — currently unobtainable.","Limited / retired","30","🪙"],
+["eggstravaganza","Eggstravaganza","Collect the 6 golden eggs — currently unobtainable.","Limited / retired","30","🥚"]
+];
+const completedKey="drqt_completed_v1", customKey="drqt_custom_v1";
+let completed=JSON.parse(localStorage.getItem(completedKey)||"{}"), custom=JSON.parse(localStorage.getItem(customKey)||"[]");
+function save(){localStorage.setItem(completedKey,JSON.stringify(completed));localStorage.setItem(customKey,JSON.stringify(custom))}
+function esc(s){return s.replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c]))}
+function render(){const q=document.getElementById("search").value.toLowerCase(), f=document.getElementById("filter").value, c=document.getElementById("category").value;let visible=quests.filter(x=>(!q||(x[1]+" "+x[2]).toLowerCase().includes(q))&&(c==="all"||x[3]===c)&&(f==="all"||(f==="done"?!!completed[x[0]]:!completed[x[0]])));let groups={};visible.forEach(x=>(groups[x[3]]??=[]).push(x));let order=["Milestone","Easy","Medium","Hard","Easter Egg","Limited / retired"];let html="";order.forEach(cat=>{if(!groups[cat]?.length)return;html+="<section><div class='section-head'><h2>"+cat+"</h2><span class='count'>"+groups[cat].filter(x=>completed[x[0]]).length+" / "+groups[cat].length+" done</span></div><div class='grid'>";groups[cat].forEach(x=>{const done=!!completed[x[0]];html+="<div class='quest "+(done?"done":"")+"'><input type='checkbox' data-id='"+x[0]+"' "+(done?"checked":"")+" "+(cat==="Limited / retired"?"disabled":"")+"><div class='icon'>"+x[5]+"</div><div><div class='name'>"+esc(x[1])+"</div><div class='desc'>"+esc(x[2])+"</div></div><div class='reward'>"+x[4]+" Bonds</div></div>"});html+="</div></section>"});document.getElementById("app").innerHTML=html||"<div class='empty'>No quests match that filter.</div>";document.querySelectorAll("#app input[type=checkbox]").forEach(el=>el.onchange=()=>{completed[el.dataset.id]=el.checked;save();render();update()});update()}
+function update(){const track=quests.filter(x=>x[3]!=="Limited / retired");const customDone=custom.filter(x=>x.done).length;const done=track.filter(x=>completed[x[0]]).length+customDone,total=track.length+custom.length,p=Math.round(done/Math.max(total,1)*100);document.getElementById("pct").textContent=p+"%";document.getElementById("stat").textContent=done+" / "+total+" completed";document.getElementById("bar").style.width=p+"%";renderCustom()}
+function renderCustom(){const box=document.getElementById("customList");box.innerHTML=custom.length?custom.map((x,i)=>"<div class='quest "+(x.done?"done":"")+"'><input type='checkbox' data-custom='"+i+"' "+(x.done?"checked":"")+"><div class='icon'>"+(x.icon?.startsWith("data:")?"<img src='"+x.icon+"' alt=''>":esc(x.icon||"✓"))+"</div><div><div class='name'>"+esc(x.name)+"</div><div class='desc'>"+esc(x.note||"")+"</div></div><div class='actions'><button class='mini' data-delete='"+i+"'>Delete</button></div></div>").join(""):"<div class='empty'>Add your own goals here — speedruns, class mastery, personal milestones, anything.</div>";box.querySelectorAll("[data-custom]").forEach(e=>e.onchange=()=>{custom[e.dataset.custom].done=e.checked;save();update()});box.querySelectorAll("[data-delete]").forEach(e=>e.onclick=()=>{custom.splice(+e.dataset.delete,1);save();update()})}
+document.getElementById("addCustom").onclick=()=>{const n=document.getElementById("customName").value.trim();if(!n)return;custom.push({name:n,note:document.getElementById("customNote").value.trim(),icon:document.getElementById("customIcon").value.trim()||"✓",done:false});document.getElementById("customName").value="";document.getElementById("customNote").value="";save();update()};
+["search","filter","category"].forEach(id=>document.getElementById(id).addEventListener("input",render));
+document.getElementById("uncheck").onclick=()=>{completed={};custom.forEach(x=>x.done=false);save();render()};
+document.getElementById("reset").onclick=()=>{if(confirm("Reset all Dead Rails and custom progress?")){completed={};custom=[];save();render()}};
+render();
+</script>
+</body></html>
